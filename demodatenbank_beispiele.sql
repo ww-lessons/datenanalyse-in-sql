@@ -29,6 +29,12 @@ group by geschlecht;
 select * from pruefung 
 order by pnr;
 
+-- Nur Gruppen, die mind. 3 Elemente enthalten
+select geschlecht, count(*) as anzahl
+from student 
+group by geschlecht
+having count(*) >= 3;
+
 -- Anzahl der Prüfungen pro Lehrplansemester
 select (pnr/10)-99 as lpsem, count(*)
 from pruefung
@@ -49,6 +55,13 @@ where cast(pnr as varchar(10)) like '%1%';
 select *
 from pruefung
 where cast(pnr as varchar(10)) similar to '[0-9][0-9][12][0-9]';
+
+-- Anzahl der männl. und weibl. Studenten gruppiert nach Familiennamen
+select nachname, 
+       sum(case when geschlecht = 'm' then 1 else 0 end) as maennlich,
+       sum(case when geschlecht = 'w' then 1 else 0 end) as weiblich
+from student
+group by nachname
 
 /*
  * SQLs mit Join
