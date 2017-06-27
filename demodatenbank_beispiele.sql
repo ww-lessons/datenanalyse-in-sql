@@ -17,6 +17,9 @@ where student_id != 10;
 select * from leistung
 where student_id <> 10;
 
+select * from student
+order by vorname desc, nachname asc;
+
 --  Ermitteln der Anzahl der Studenten
 select count(*) from student;
 
@@ -110,6 +113,48 @@ and column_name = 'pruefung_id';
 
 -- Ermitteln aller *_id -Spalten
 select table_name, column_name, data_type
-from information_schema.columns
+from information_schema.columnsE
 where table_catalog = 'schulung'
 and column_name like '%\_id' -- zuerst mit %_id versuchen -> aber _ ist ja Platzhalter für genau ein Zeichen!!!
+
+-- Alle Studenten mit Durchschnittsnoten
+select s.vorname, s.nachname, round(avg(l.note)/100, 2) as durchschnitt
+from student as s
+inner join leistung as l
+on s.student_id = l.student_id
+where l.note < 500
+group by s.vorname, s.nachname
+order by durchschnitt
+
+
+-- CTE-Beispiel, das zeigt wie SQL-Statements in kleinere Teilabschnitte zerlegt werden können
+with 
+/*
+ * Virtuelle Tabelle der Notenschnitte pro Student -> eine Zeile pro Student
+ */
+durchschnitt_pro_student as (
+    select l.student_id, round(avg(case when l.note < 500 and l.note >= 100 then l.note else null end)/100, 2) as durchschnitt
+    from leistung as l
+    group by l.student_id
+), 
+/*
+ * Virtuelle Tabelle der Anzahl der Fehlversuche und Gesamtzahl der Prüfungsversuche pro Student
+ */
+fehlversuche_pro_student as (
+    select s.student_id, sum(case when l.note = 500 then 1 else 0 end) as fehlversuche, count(l) as leistungen
+    from student as s
+    left outer join leistung l
+        on s.student_id = l.student_id
+    group by s.student_id
+)
+/*
+ * Das eigentliche Select-Statemtent, das auf den beiden Zwischenergebnissen aufbauen kann...
+ */
+select s.*, d.durchschnitt, f.fehlversuche, f.leistungen
+from student as s
+inner join fehlversuche_pro_student as f
+    on f.student_id = s.student_id
+left outer join durchschnitt_pro_student as d
+    on s.student_id = d.student_id
+
+    
